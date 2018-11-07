@@ -8,6 +8,9 @@ from concurrent.futures import ThreadPoolExecutor
 #####              selenium functions getting our data                    #####
 ###############################################################################
 opts = Options()
+prefs = {'download.default_directory': '/home/developer/PycharmProjects/tika/data/raw'}
+opts.add_experimental_option('prefs', prefs)
+
 def init_browser(url):
     browser = Chrome(options=opts)
     browser.get(url)
@@ -40,9 +43,9 @@ with urllib.request.urlopen(req) as response:
     except Exception as e:
         print(e)
 
-#TODO: use concurrent futures for speeding up the process
-ending = '?pg=%s&layout=s'
-for book in books:
+#TODO: reafactor!
+def download_page(book):
+    ending = '?pg=%s&layout=s'
     for i in range(0, 500):
         pagination = ending % i
         u = book + pagination
@@ -52,8 +55,12 @@ for book in books:
             time.sleep(1)
             ok = browser.find_element_by_name('ok')
             ok.click()
-            time.sleep(3)
+            time.sleep(1)
             browser.quit()
         except Exception as e:
             print(e)
-            continue
+            pass
+
+# work on each book in parallel
+with ThreadPoolExecutor(max_workers=len(books)) as executor:
+    executor.map(download_page, books)
