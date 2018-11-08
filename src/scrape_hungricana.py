@@ -11,6 +11,7 @@ opts = Options()
 prefs = {'download.default_directory': '/home/developer/PycharmProjects/tika/data/raw'}
 opts.add_experimental_option('prefs', prefs)
 
+
 def init_browser(url):
     browser = Chrome(options=opts)
     browser.get(url)
@@ -42,25 +43,33 @@ with urllib.request.urlopen(req) as response:
         books = ['https://library.hungaricana.hu' + e for e in books]
     except Exception as e:
         print(e)
+tocrawl = []
 
-#TODO: reafactor!
-def download_page(book):
+
+def generate_urls(book):
     ending = '?pg=%s&layout=s'
-    for i in range(0, 500):
+    for i in range(0, 800):
         pagination = ending % i
         u = book + pagination
-        try:
-            browser, button = init_browser(u)
-            button.click()
-            time.sleep(1)
-            ok = browser.find_element_by_name('ok')
-            ok.click()
-            time.sleep(1)
-            browser.quit()
-        except Exception as e:
-            print(e)
-            pass
+        tocrawl.append(u)
 
-# work on each book in parallel
-with ThreadPoolExecutor(max_workers=len(books)) as executor:
-    executor.map(download_page, books)
+for book in books:
+    generate_urls(book)
+
+
+def download_page(page):
+    try:
+        browser, button = init_browser(page)
+        button.click()
+        time.sleep(1)
+        ok = browser.find_element_by_name('ok')
+        ok.click()
+        time.sleep(2)
+        browser.quit()
+    except Exception as e:
+        print(e)
+        pass
+
+
+with ThreadPoolExecutor(max_workers=30) as executor:
+    executor.map(download_page, tocrawl)
